@@ -43,8 +43,8 @@ DigitalOcean context: `doctl2 --context apexdata`
 ┌────────────────────────────────────────┼──────────────────────┐
 │  lobsters-app  178.128.147.216  (10.116.0.2)                 │
 │                                        │                     │
-│  nginx :80 ──┬── Puma :3001 ──────────►│ MariaDB (trilogy)   │
-│  (0.0.0.0)   ├── Puma :3002 ── SQLite (local file)          │
+│  nginx :443 ─┬── Puma :3001 ──────────►│ MariaDB (trilogy)   │
+│  (TLS/LE)    ├── Puma :3002 ── SQLite (local file)          │
 │              └── Puma :3003 ── SQLite (local, fixed query)   │
 │              (all Puma on 127.0.0.1)                         │
 └──────────────────────────────────────────────────────────────┘
@@ -54,7 +54,9 @@ DigitalOcean context: `doctl2 --context apexdata`
 
 - MariaDB binds to `10.116.0.3` (private network only) — not accessible from internet
 - Puma services bind to `127.0.0.1` — only accessible via nginx
-- Only SSH (22) and HTTP (80) are publicly accessible
+- Publicly accessible: SSH (22), HTTP (80, redirects to HTTPS), HTTPS (443)
+- Let's Encrypt TLS via certbot (nginx plugin), auto-renewal configured
+- robots.txt on all three sites: `Disallow: /`
 
 ### Provisioning
 

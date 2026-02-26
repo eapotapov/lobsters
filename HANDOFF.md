@@ -21,11 +21,11 @@ A study of the Lobsters (lobste.rs) failed SQLite migration. On Feb 21, 2026, th
 - Confirmed the query fix eliminates the bottleneck
 - Scripts in `benchmarks/`, results in `INVESTIGATION.md`
 
-### Phase 3: Production-faithful reproduction (IN PROGRESS)
+### Phase 3: Production-faithful reproduction (COMPLETE)
 
-**Infrastructure: COMPLETE. Databases: SEEDED.**
+**Infrastructure: COMPLETE. Databases: SEEDED. Data: VERIFIED IDENTICAL.**
 
-All three versions are running and serving pages with production-scale data.
+All three versions are running and serving pages over HTTPS with production-scale data. Playwright-based comparison confirmed identical content across all three sites (homepage, /recent, /comments, story pages, user profiles).
 
 ## Infrastructure
 
@@ -45,11 +45,13 @@ SSH: `ssh root@178.128.147.216` / `ssh root@104.248.63.52`
 | `lobsters-current` | 3001 | MariaDB on 10.116.0.3 | lobsters-mariadb.eapotapov.dev |
 | `lobsters-sqlite` | 3002 | SQLite (local) | lobsters-1871.eapotapov.dev |
 | `lobsters-sqlite-fixed` | 3003 | SQLite (local) | lobsters-1927.eapotapov.dev |
-| nginx | 80 | — | routes by Host header |
+| nginx | 80/443 | — | routes by Host header, HTTPS via Let's Encrypt |
 
 All Puma services bind to 127.0.0.1 (nginx proxies). MariaDB binds to 10.116.0.3 (private only).
 
-**Note:** `.dev` TLD requires HTTPS (HSTS preloaded). Let's Encrypt certs are configured via nginx.
+**HTTPS:** Let's Encrypt certs via certbot (nginx plugin). Auto-renewal configured. Cert at `/etc/letsencrypt/live/lobsters-mariadb.eapotapov.dev/`. All three domains on one cert. Certbot added `listen 443 ssl` and HTTP→HTTPS redirect to nginx config.
+
+**robots.txt:** All three sites return `Disallow: /` via nginx `location = /robots.txt` block (inline, no file on disk).
 
 ### /etc/hosts entry
 
@@ -65,7 +67,7 @@ All Puma services bind to 127.0.0.1 (nginx proxies). MariaDB binds to 10.116.0.3
 | Ruby | 4.0.0 via rbenv (with YJIT) |
 | Rust | latest stable via rustup (in `/srv/lobsters/.cargo/`) |
 | Rails env | `RAILS_ENV=development` (all three) |
-| nginx | system package, port 80 |
+| nginx | system package, ports 80+443 (Let's Encrypt via certbot) |
 
 App code lives at `/srv/lobsters/{lobsters-current,lobsters-sqlite,lobsters-sqlite-fixed}`.
 All run as the `lobsters` system user.
@@ -93,6 +95,7 @@ All three databases contain identical data:
 | domains | 1 |
 | keystores | 10,001 |
 | moderations | 88 |
+| mod_activities | 88 |
 | usernames | 5,000 |
 | **Total** | **~7,250,000** |
 
@@ -256,13 +259,13 @@ Comment.joins(inner_join).where(story_id: story_ids).order(...)
 
 ## Database Snapshots
 
-Snapshots taken 2026-02-26 with all services stopped, for fast restore without re-seeding.
+Latest snapshots taken 2026-02-26 with all services stopped (suffix `b` = includes mod_activities fix).
 
 | Snapshot | Server | Path | Size |
 |---|---|---|---|
-| MariaDB datadir | lobsters-db (104.248.63.52) | `/srv/lobsters/snapshots/mariadb-lobsters_current-20260226.tar.gz` | 550 MB |
-| SQLite (PR #1871) | lobsters-app (178.128.147.216) | `/srv/lobsters/snapshots/lobsters-sqlite-20260226.sqlite3` | 996 MB |
-| SQLite (fixed) | lobsters-app (178.128.147.216) | `/srv/lobsters/snapshots/lobsters-sqlite-fixed-20260226.sqlite3` | 996 MB |
+| MariaDB datadir | lobsters-db (104.248.63.52) | `/srv/lobsters/snapshots/mariadb-lobsters_current-20260226b.tar.gz` | 550 MB |
+| SQLite (PR #1871) | lobsters-app (178.128.147.216) | `/srv/lobsters/snapshots/lobsters-sqlite-20260226b.sqlite3` | 996 MB |
+| SQLite (fixed) | lobsters-app (178.128.147.216) | `/srv/lobsters/snapshots/lobsters-sqlite-fixed-20260226b.sqlite3` | 996 MB |
 
 ### Restore
 
@@ -270,14 +273,14 @@ Snapshots taken 2026-02-26 with all services stopped, for fast restore without r
 # MariaDB (on lobsters-db)
 systemctl stop mariadb
 rm -rf /var/lib/mysql/lobsters_current
-cd /var/lib/mysql && tar xzf /srv/lobsters/snapshots/mariadb-lobsters_current-20260226.tar.gz
+cd /var/lib/mysql && tar xzf /srv/lobsters/snapshots/mariadb-lobsters_current-20260226b.tar.gz
 chown -R mysql:mysql /var/lib/mysql/lobsters_current
 systemctl start mariadb
 
 # SQLite (on lobsters-app)
 systemctl stop lobsters-sqlite lobsters-sqlite-fixed
-cp /srv/lobsters/snapshots/lobsters-sqlite-20260226.sqlite3 /srv/lobsters/lobsters-sqlite/db/development/primary.sqlite3
-cp /srv/lobsters/snapshots/lobsters-sqlite-fixed-20260226.sqlite3 /srv/lobsters/lobsters-sqlite-fixed/db/development/primary.sqlite3
+cp /srv/lobsters/snapshots/lobsters-sqlite-20260226b.sqlite3 /srv/lobsters/lobsters-sqlite/db/development/primary.sqlite3
+cp /srv/lobsters/snapshots/lobsters-sqlite-fixed-20260226b.sqlite3 /srv/lobsters/lobsters-sqlite-fixed/db/development/primary.sqlite3
 chown lobsters:lobsters /srv/lobsters/lobsters-sqlite/db/development/primary.sqlite3 /srv/lobsters/lobsters-sqlite-fixed/db/development/primary.sqlite3
 systemctl start lobsters-sqlite lobsters-sqlite-fixed
 ```
@@ -285,19 +288,18 @@ systemctl start lobsters-sqlite lobsters-sqlite-fixed
 ## Current Status (as of 2026-02-26)
 
 All three versions are **fully operational** with production-scale data:
-- All return HTTP 200 on homepage and story pages
+- All return HTTPS 200 on all pages
+- HTTPS via Let's Encrypt (certbot, auto-renewal)
+- robots.txt blocks all crawlers on all three sites
 - Test user passwords set on all versions
-- Services restarted and verified after seeding
-- Quick smoke test on story with most comments showed expected pattern:
-  - MariaDB: ~0.25s
-  - SQLite broken (PR #1871): ~4.5s on first hit (slow due to bad query plan)
-  - SQLite fixed: ~0.55s
+- Database snapshots taken (suffix `b` includes mod_activities fix)
+- Data verified identical across all three via Playwright comparison:
+  - Homepage (25 stories: scores, titles, tags, users, comment counts)
+  - /recent, /comments pages
+  - Multiple story pages with comments
+  - User profile page
 
 ## Next Steps
 
-1. **Run benchmarks on the production-faithful setup:**
-   - Copy `benchmarks/` to the app server
-   - Run the load tests comparing all three versions
-   - Key comparison: lobsters-sqlite (port 3002) vs lobsters-sqlite-fixed (port 3003)
-   - Also compare with lobsters-current (port 3001, MariaDB on separate server)
-2. **Write up final benchmark results**
+1. **Set up k6 performance testing** against all three versions
+2. **Write up final benchmark results** comparing MariaDB vs SQLite-broken vs SQLite-fixed

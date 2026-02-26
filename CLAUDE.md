@@ -51,7 +51,7 @@ DigitalOcean context: `doctl2 --context apexdata`
 | `lobsters-current` | 3001 | 127.0.0.1 | MariaDB on lobsters-db | lobsters-mariadb.eapotapov.dev |
 | `lobsters-sqlite` | 3002 | 127.0.0.1 | SQLite (local) | lobsters-1871.eapotapov.dev |
 | `lobsters-sqlite-fixed` | 3003 | 127.0.0.1 | SQLite (local, fixed) | lobsters-1927.eapotapov.dev |
-| nginx | 80 | 0.0.0.0 | — | routes by Host header |
+| nginx | 80/443 | 0.0.0.0 | — | routes by Host header, HTTPS via Let's Encrypt |
 
 MariaDB on lobsters-db binds to `10.116.0.3` (private network only).
 
@@ -157,7 +157,7 @@ ssh root@178.128.147.216 'systemctl status lobsters-current lobsters-sqlite lobs
 
 # Test all three versions
 for host in lobsters-mariadb.eapotapov.dev lobsters-1871.eapotapov.dev lobsters-1927.eapotapov.dev; do
-  curl -s -o /dev/null -w "$host: HTTP %{http_code}\n" http://$host/
+  curl -s -o /dev/null -w "$host: HTTP %{http_code}\n" https://$host/
 done
 
 # Re-run ansible provisioning
