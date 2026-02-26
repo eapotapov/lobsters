@@ -1,0 +1,26 @@
+---
+trilogy: &trilogy
+  adapter: trilogy
+  encoding: utf8mb4
+  host: 127.0.0.1
+  port: 3306
+  pool: 5
+  username: lobsters
+  password: lobsters
+
+sqlite3: &sqlite3
+  adapter: sqlite3
+  timeout: 1000
+
+development:
+  primary:
+    <<: *trilogy
+    database: lobsters_revert
+  cache:
+    <<: *sqlite3
+    database: db/development/cache.sqlite3
+    migrations_paths: db/development/cache_migrate
+  queue:
+    <<: *sqlite3
+    database: db/development/queue.sqlite3
+    migrations_paths: db/development/queue_migrate

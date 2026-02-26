@@ -1,0 +1,9 @@
+[submodule "lobsters-current"]
+	path = lobsters-current
+	url = https://github.com/lobsters/lobsters.git
+[submodule "lobsters-sqlite"]
+	path = lobsters-sqlite
+	url = https://github.com/lobsters/lobsters.git
+[submodule "lobsters-sqlite-fixed"]
+	path = lobsters-sqlite-fixed
+	url = https://github.com/eapotapov/lobsters-sqlite-fix.git

@@ -1,0 +1,13 @@
+[Unit]
+Description=Lobsters After Revert (port 3003)
+
+[Service]
+Type=simple
+WorkingDirectory=/home/%u/lobsters/3-after-revert
+Environment=PATH=/home/%u/.rbenv/versions/4.0.0/bin:/home/%u/.rbenv/bin:/usr/bin:/bin
+Environment=RAILS_ENV=development
+ExecStart=/home/%u/.rbenv/versions/4.0.0/bin/bundle exec puma -b tcp://127.0.0.1:3003
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

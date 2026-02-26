@@ -1,0 +1,13 @@
+[Unit]
+Description=Lobsters After SQLite (port 3002)
+
+[Service]
+Type=simple
+WorkingDirectory=/home/%u/lobsters/2-after-sqlite
+Environment=PATH=/home/%u/.rbenv/versions/4.0.0/bin:/home/%u/.rbenv/bin:/usr/bin:/bin
+Environment=RAILS_ENV=development
+ExecStart=/home/%u/.rbenv/versions/4.0.0/bin/bundle exec puma -b tcp://127.0.0.1:3002
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,17 @@
+---
+sqlite3: &sqlite3
+  adapter: sqlite3
+  timeout: 1000
+
+development:
+  primary:
+    <<: *sqlite3
+    database: db/development/primary.sqlite3
+  cache:
+    <<: *sqlite3
+    database: db/development/cache.sqlite3
+    migrations_paths: db/development/cache_migrate
+  queue:
+    <<: *sqlite3
+    database: db/development/queue.sqlite3
+    migrations_paths: db/development/queue_migrate

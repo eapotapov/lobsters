@@ -1,0 +1,5 @@
+# Benchmark results (generated on remote server)
+benchmark_results/
+
+# Playwright CLI snapshots
+.playwright-cli/
