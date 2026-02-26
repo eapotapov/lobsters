@@ -14,11 +14,11 @@ SQLite's query planner picks the wrong index for `Comment.story_threads()` — t
 
 Two DigitalOcean droplets run three versions side-by-side with identical production-scale data (~7.2M rows):
 
-| Version | DB | Hostname |
+| Version | DB | URL |
 |---|---|---|
-| Current (main) | MariaDB (separate server) | `lobsters-mariadb.eapotapov.dev` |
-| PR #1871 (broken) | SQLite | `lobsters-1871.eapotapov.dev` |
-| Fix (PR #1927) | SQLite | `lobsters-1927.eapotapov.dev` |
+| Current (main) | MariaDB (separate server) | https://lobsters-mariadb.eapotapov.dev |
+| PR #1871 (broken) | SQLite | https://lobsters-1871.eapotapov.dev |
+| Fix (PR #1927) | SQLite | https://lobsters-1927.eapotapov.dev |
 
 ## Repository Structure
 
