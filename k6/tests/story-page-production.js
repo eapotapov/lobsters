@@ -1,16 +1,14 @@
-// Production load test: sends exactly 20 req/s for 5 minutes using
-// constant-arrival-rate executor. Measures response times and dropped
+// Production load test for story pages: sends exactly 20 req/s for 5 minutes
+// using constant-arrival-rate executor. Measures response times and dropped
 // requests under a fixed load that matches real Lobsters traffic (15-25 req/s).
 //
 // Usage:
-//   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev -e ENDPOINT=/ production-load.js
-//   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev -e ENDPOINT=/s/ production-load.js
+//   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev story-page-production.js
 
 import http from "k6/http";
 import { check } from "k6";
 
 const BASE = __ENV.TARGET_URL;
-const ENDPOINT = __ENV.ENDPOINT || "/";
 const STORY_IDS = [
   "wgwbaa", "2szaaa", "6kwbaa", "zxnaaa", "larbaa",
   "86uaaa", "5rgbaa", "oisaaa", "1tzbaa", "phocaa",
@@ -30,11 +28,7 @@ export const options = {
 };
 
 export default function () {
-  let url = BASE + ENDPOINT;
-  if (ENDPOINT === "/s/") {
-    const id = STORY_IDS[Math.floor(Math.random() * STORY_IDS.length)];
-    url = BASE + "/s/" + id;
-  }
-  const res = http.get(url);
+  const id = STORY_IDS[Math.floor(Math.random() * STORY_IDS.length)];
+  const res = http.get(BASE + "/s/" + id);
   check(res, { "status 200": (r) => r.status === 200 });
 }
