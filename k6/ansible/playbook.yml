@@ -1,0 +1,133 @@
+---
+- name: Provision k6 load testing server
+  hosts: k6
+  become: true
+  vars:
+    domain: lobsters-k6.eapotapov.dev
+    htpasswd_user: lobsters
+    htpasswd_pass: "{{ lookup('env', 'K6_HTPASSWD_PASS') | default('changeme', true) }}"
+    certbot_email: "{{ lookup('env', 'CERTBOT_EMAIL') | default('admin@eapotapov.dev', true) }}"
+
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - gnupg2
+          - software-properties-common
+          - nginx
+          - certbot
+          - python3-certbot-nginx
+          - apache2-utils
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: Download k6 deb package
+      ansible.builtin.get_url:
+        url: "https://github.com/grafana/k6/releases/download/v1.6.1/k6-v1.6.1-linux-amd64.deb"
+        dest: /tmp/k6.deb
+        mode: "0644"
+
+    - name: Install k6
+      apt:
+        deb: /tmp/k6.deb
+        state: present
+
+    - name: Create htpasswd file
+      command: htpasswd -cb /etc/nginx/.htpasswd {{ htpasswd_user }} {{ htpasswd_pass }}
+      args:
+        creates: /etc/nginx/.htpasswd
+
+    - name: Set htpasswd permissions
+      file:
+        path: /etc/nginx/.htpasswd
+        owner: root
+        group: www-data
+        mode: "0640"
+
+    - name: Deploy nginx config
+      template:
+        src: templates/nginx.conf.j2
+        dest: "/etc/nginx/sites-available/{{ domain }}"
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable nginx site
+      file:
+        src: "/etc/nginx/sites-available/{{ domain }}"
+        dest: "/etc/nginx/sites-enabled/{{ domain }}"
+        state: link
+      notify: Reload nginx
+
+    - name: Remove default nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Ensure nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Configure UFW defaults
+      community.general.ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: incoming, policy: deny }
+        - { direction: outgoing, policy: allow }
+
+    - name: Allow SSH, HTTP, HTTPS through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "22"
+        - "80"
+        - "443"
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+
+    - name: Create webroot directory
+      file:
+        path: /var/www/html
+        state: directory
+        mode: "0755"
+      tags: [certbot]
+
+    - name: Obtain Let's Encrypt certificate
+      command: >
+        certbot certonly --webroot -w /var/www/html
+        -d {{ domain }}
+        --non-interactive --agree-tos
+        -m {{ certbot_email }}
+      args:
+        creates: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+      tags: [certbot]
+
+    - name: Create k6 tests directory
+      file:
+        path: /srv/k6/tests
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Copy k6 test scripts
+      copy:
+        src: "../tests/"
+        dest: /srv/k6/tests/
+        owner: root
+        group: root
+        mode: "0644"
+
+  handlers:
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded

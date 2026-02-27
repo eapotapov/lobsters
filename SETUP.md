@@ -16,6 +16,7 @@ Two-server deployment matching production Lobsters infrastructure. Provisioned v
 |---|---|---|---|---|
 | `lobsters-app` | 178.128.147.216 | 10.116.0.2 | s-4vcpu-8gb, nyc1 | App server: 3x Puma, nginx |
 | `lobsters-db` | 104.248.63.52 | 10.116.0.3 | s-4vcpu-8gb, nyc1 | MariaDB with production config |
+| `lobsters-k6` | 68.183.105.136 | 10.116.0.4 | s-4vcpu-8gb, nyc1 | k6 load testing + web dashboard |
 
 DigitalOcean context: `doctl2 --context apexdata`
 
@@ -52,9 +53,11 @@ DigitalOcean context: `doctl2 --context apexdata`
 
 ### Security
 
+- **UFW firewall** on both servers (default deny incoming)
+  - `lobsters-app`: allows SSH (22), HTTP (80), HTTPS (443)
+  - `lobsters-db`: allows SSH (22), MariaDB (3306) from 10.116.0.2 only
 - MariaDB binds to `10.116.0.3` (private network only) — not accessible from internet
 - Puma services bind to `127.0.0.1` — only accessible via nginx
-- Publicly accessible: SSH (22), HTTP (80, redirects to HTTPS), HTTPS (443)
 - Let's Encrypt TLS via certbot (nginx plugin), auto-renewal configured
 - robots.txt on all three sites: `Disallow: /`
 

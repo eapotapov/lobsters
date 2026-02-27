@@ -41,6 +41,7 @@ Two DigitalOcean droplets matching production Lobsters specs:
 |---|---|---|---|---|
 | `lobsters-app` | 178.128.147.216 | 10.116.0.2 | App server (3x Puma, nginx) | s-4vcpu-8gb, nyc1 |
 | `lobsters-db` | 104.248.63.52 | 10.116.0.3 | MariaDB server | s-4vcpu-8gb, nyc1 |
+| `lobsters-k6` | 68.183.105.136 | 10.116.0.4 | k6 load testing | s-4vcpu-8gb, nyc1 |
 
 DigitalOcean context: `doctl2 --context apexdata`
 
@@ -187,10 +188,14 @@ ssh root@178.128.147.216 "mysql -h 10.116.0.3 -u lobsters -plobsters -e 'SELECT 
 ├── lobsters-current/          # Submodule: upstream main (MariaDB)
 ├── lobsters-sqlite/           # Submodule: PR #1871 (SQLite, broken)
 ├── lobsters-sqlite-fixed/     # Submodule: fork with query fix
-├── benchmarks/                # Performance test scripts
+├── benchmarks/                # Performance test scripts (wrk, legacy)
 │   ├── 01-load-test-*.sh      # wrk load tests
 │   ├── 02-explain-*.rb        # Query plan analysis
 │   └── ...
+├── k6/                        # k6 load testing
+│   ├── ansible/               # Provisioning for lobsters-k6 droplet
+│   ├── tests/                 # k6 test scripts (.js)
+│   └── README.md
 └── scripts/                   # Seeding and server scripts
     ├── seed_production_scale.rb     # Bulk data generator for MariaDB (with JOIN-based counter updates)
     ├── import_to_sqlite_fast.rb     # Fast SQLite import (drop indexes, bulk insert, recreate)
