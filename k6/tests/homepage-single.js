@@ -1,3 +1,11 @@
+// Stress test for the homepage: 10 virtual users request / as fast as
+// possible for 5 minutes. Measures maximum throughput each version can
+// sustain. Unlike production-load.js there is no target arrival rate —
+// every VU loops continuously, so there are no "dropped" requests.
+//
+// Usage:
+//   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev homepage-single.js
+
 import http from "k6/http";
 import { check, sleep } from "k6";
 

@@ -1,3 +1,11 @@
+// Stress test for story pages: 10 virtual users request random /s/:id
+// pages as fast as possible for 5 minutes. Measures maximum throughput
+// each version can sustain. Unlike production-load.js there is no target
+// arrival rate — every VU loops continuously, so there are no "dropped" requests.
+//
+// Usage:
+//   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev story-page-single.js
+
 import http from "k6/http";
 import { check, sleep } from "k6";
 

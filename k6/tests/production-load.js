@@ -1,3 +1,11 @@
+// Production load test: sends exactly 20 req/s for 5 minutes using
+// constant-arrival-rate executor. Measures response times and dropped
+// requests under a fixed load that matches real Lobsters traffic (15-25 req/s).
+//
+// Usage:
+//   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev -e ENDPOINT=/ production-load.js
+//   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev -e ENDPOINT=/s/ production-load.js
+
 import http from "k6/http";
 import { check } from "k6";
 
