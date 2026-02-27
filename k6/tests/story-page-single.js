@@ -7,7 +7,7 @@
 //   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev story-page-single.js
 
 import http from "k6/http";
-import { check, sleep } from "k6";
+import { check } from "k6";
 
 const BASE = __ENV.TARGET_URL;
 const STORY_IDS = [
@@ -24,5 +24,4 @@ export default function () {
   const id = STORY_IDS[Math.floor(Math.random() * STORY_IDS.length)];
   const res = http.get(BASE + "/s/" + id);
   check(res, { "status 200": (r) => r.status === 200 });
-  sleep(0.5);
 }

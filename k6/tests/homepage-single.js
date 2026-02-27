@@ -7,7 +7,7 @@
 //   k6 run -e TARGET_URL=https://lobsters-mariadb.eapotapov.dev homepage-single.js
 
 import http from "k6/http";
-import { check, sleep } from "k6";
+import { check } from "k6";
 
 const BASE = __ENV.TARGET_URL;
 
@@ -19,5 +19,4 @@ export const options = {
 export default function () {
   const res = http.get(BASE + "/");
   check(res, { "status 200": (r) => r.status === 200 });
-  sleep(0.5);
 }
